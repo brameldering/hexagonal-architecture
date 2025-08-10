@@ -1,5 +1,7 @@
 # inventory
 
+This project implements a Telco inventory system according to the hexagonal architecture principles.
+
 This project uses Quarkus, the Supersonic Subatomic Java Framework.
 
 If you want to learn more about Quarkus, please visit its website: <https://quarkus.io/>.
