@@ -2,63 +2,53 @@
 
 This project implements a Telco inventory system according to the hexagonal architecture principles.
 
-This project uses Quarkus, the Supersonic Subatomic Java Framework.
+## Architecture Overview
 
-If you want to learn more about Quarkus, please visit its website: <https://quarkus.io/>.
+This design follows a hexagonal (ports-and-adapters) architecture. Incoming HTTP requests into the REST layer delegate to a CLI adapter, which drives the core use case through clearly defined input and output ports. The outbound file adapter implements the port to load domain entities from a text resource.
 
-## Running the application in dev mode
+## Components and Responsibilities
 
-You can run your application in dev mode that enables live coding using:
+### Adapters
 
-```shell script
-./mvnw quarkus:dev
-```
+nl.nextiga.inventory.restAPIs.**RouterRestAPI** («REST API») 
+- Exposes the HTTP GET /test endpoint. 
+- Instantiates RouterViewCLIAdapter and returns the filtered router list as plain text.
 
-> **_NOTE:_**  Quarkus now ships with a Dev UI, which is available in dev mode only at <http://localhost:8080/q/dev/>.
+nl.nextiga.inventory.framework.adapters.input.stdin.**RouterViewCLIAdapter** («Adapter»)
+- Holds a reference to RouterViewUseCase. 
+- In its constructor it wires the input port to the file adapter. 
+- Its obtainRelatedRouters(type) method applies the domain filter and returns matching routers.
 
-## Packaging and running the application
+### Ports & Use Case
 
-The application can be packaged using:
+nl.nextiga.inventory.application.usecases.**RouterViewUseCase** («Input Port», interface) 
+- Declares the core application operation: List<Router> getRouters(Predicate<Router> filter);
 
-```shell script
-./mvnw package
-```
+nl.nextiga.inventory.application.ports.input.**RouterViewInputPort** («Use Case») 
+- Implements RouterViewUseCase. 
+- Depends on RouterViewOutputPort to fetch raw routers, then applies the provided Predicate<Router> filter via Router.retrieveRouter(...).
 
-It produces the `quarkus-run.jar` file in the `target/quarkus-app/` directory.
-Be aware that it’s not an _über-jar_ as the dependencies are copied into the `target/quarkus-app/lib/` directory.
+nl.nextiga.inventory.application.ports.output.**RouterViewOutputPort** («Output Port», interface) 
+- Declares the outbound operation: List<Router> fetchRouters();
 
-The application is now runnable using `java -jar target/quarkus-app/quarkus-run.jar`.
+### Infrastructure
 
-If you want to build an _über-jar_, execute the following command:
+nl.nextiga.inventory.framework.adapters.output.file.**RouterViewFileAdapter** («File Adapter, Singleton») 
+- Implements RouterViewOutputPort. 
+- Lazily loads routers.txt from the classpath, parses each line into Router (using RouterType and RouterId), and returns the list.
 
-```shell script
-./mvnw package -Dquarkus.package.jar.type=uber-jar
-```
+### Domain Entities
 
-The application, packaged as an _über-jar_, is now runnable using `java -jar target/*-runner.jar`.
+nl.nextiga.inventory.domain.**Router** («Entity») 
+- Holds RouterType and RouterId. 
+- Provides:
+  - static Predicate<Router> filterRouterByType(RouterType)
+  - static List<Router> retrieveRouter(List<Router>, Predicate<Router>)
+  - toString() for logging
 
-## Creating a native executable
+nl.nextiga.inventory.domain.**RouterId** (Value Object) 
+- Wraps the router’s unique ID. 
+- Provides a factory of(String) and toString().
 
-You can create a native executable using:
-
-```shell script
-./mvnw package -Dnative
-```
-
-Or, if you don't have GraalVM installed, you can run the native executable build in a container using:
-
-```shell script
-./mvnw package -Dnative -Dquarkus.native.container-build=true
-```
-
-You can then execute your native executable with: `./target/inventory-1.0.0-SNAPSHOT-runner`
-
-If you want to learn more about building native executables, please consult <https://quarkus.io/guides/maven-tooling>.
-
-## Provided Code
-
-### REST
-
-Easily start your REST Web Services
-
-[Related guide section...](https://quarkus.io/guides/getting-started-reactive#reactive-jax-rs-resources)
+nl.nextiga.inventory.domain.**RouterType** (Enum) 
+- Defines two values: EDGE and CORE

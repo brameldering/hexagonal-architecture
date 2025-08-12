@@ -1,0 +1,68 @@
+@startuml
+class nl.nextiga.inventory.restAPIs.RouterRestAPI {
++ String retrieveRouters()
+}
+
+enum nl.nextiga.inventory.domain.RouterType {
++  EDGE
++  CORE
+}
+
+class nl.nextiga.inventory.framework.adapters.input.stdin.RouterViewCLIAdapter {
+- RouterViewUseCase routerViewUseCase
++ <<Create>> RouterViewCLIAdapter()
++ List<Router> obtainRelatedRouters(String)
+- void setAdapters()
+}
+
+
+class nl.nextiga.inventory.domain.RouterId {
+- String id
+- <<Create>> RouterId(String)
++ {static} RouterId of(String)
++ String toString()
+}
+
+
+class nl.nextiga.inventory.framework.adapters.output.file.RouterViewFileAdapter {
+- {static} RouterViewFileAdapter instance
+- <<Create>> RouterViewFileAdapter()
++ List<Router> fetchRouters()
+- {static} List<Router> readFileAsString()
++ {static} RouterViewFileAdapter getInstance()
+}
+
+
+class nl.nextiga.inventory.domain.Router {
+- RouterType routerType
+- RouterId routerId
++ <<Create>> Router(RouterType,RouterId)
++ {static} Predicate<Router> filterRouterByType(RouterType)
+- {static} Predicate<Router> isCore()
+- {static} Predicate<Router> isEdge()
++ {static} List<Router> retrieveRouter(List<Router>,Predicate<Router>)
++ RouterType getRouterType()
++ String toString()
+}
+
+
+interface nl.nextiga.inventory.application.usecases.RouterViewUseCase {
+~ List<Router> getRouters(Predicate<Router>)
+}
+
+class nl.nextiga.inventory.application.ports.input.RouterViewInputPort {
+- RouterViewOutputPort routerListOutputPort
++ <<Create>> RouterViewInputPort(RouterViewOutputPort)
++ List<Router> getRouters(Predicate<Router>)
+}
+
+
+interface nl.nextiga.inventory.application.ports.output.RouterViewOutputPort {
+~ List<Router> fetchRouters()
+}
+
+
+
+nl.nextiga.inventory.application.ports.output.RouterViewOutputPort <|.. nl.nextiga.inventory.framework.adapters.output.file.RouterViewFileAdapter
+nl.nextiga.inventory.application.usecases.RouterViewUseCase <|.. nl.nextiga.inventory.application.ports.input.RouterViewInputPort
+@enduml

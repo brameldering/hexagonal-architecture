@@ -40,9 +40,11 @@ public class RouterViewFileAdapter implements RouterViewOutputPort {
         return routers;
     }
 
+    // SingleTon
     private RouterViewFileAdapter() {
     }
 
+    // Singleton
     public static RouterViewFileAdapter getInstance() {
         if (instance == null) {
             instance = new RouterViewFileAdapter();

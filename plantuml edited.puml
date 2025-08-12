@@ -1,0 +1,73 @@
+@startuml
+
+package "Adapters" {
+  package restAPIs {
+    class RouterRestAPI <<REST API>> {
+      + retrieveRouters(): String
+    }
+  }
+  package stdin {
+    class RouterViewCLIAdapter <<Adapter>> {
+      - routerViewUseCase: RouterViewUseCase
+      + obtainRelatedRouters(type: String): List<Router>
+    }
+  }
+}
+
+package "Ports & Use Case" {
+  package usecases {
+    interface RouterViewUseCase <<Input Port>> {
+      + getRouters(filter: Predicate<Router>): List<Router>
+    }
+  }
+  package input {
+    class RouterViewInputPort <<Use Case>> {
+      - routerListOutputPort: RouterViewOutputPort
+      + getRouters(filter: Predicate<Router>): List<Router>
+    }
+    RouterViewInputPort ..|> RouterViewUseCase
+  }
+  package output {
+    interface RouterViewOutputPort <<Output Port>> {
+      + fetchRouters(): List<Router>
+    }
+    RouterViewInputPort ..> RouterViewOutputPort : uses
+  }
+}
+
+package "Infrastructure" {
+  package file {
+    class RouterViewFileAdapter <<File Adapter, Singleton>> {
+      - instance: RouterViewFileAdapter
+      + getInstance(): RouterViewFileAdapter
+      + fetchRouters(): List<Router>
+    }
+    RouterViewFileAdapter ..|> RouterViewOutputPort
+  }
+}
+
+package "Domain" {
+  class Router <<Entity>> {
+    - routerType: RouterType
+    - routerId: RouterId
+    + filterRouterByType(type: RouterType): Predicate<Router>
+    + retrieveRouter(routers: List<Router>, predicate: Predicate<Router>): List<Router>
+    + toString(): String
+  }
+  class RouterId {
+    - id: String
+    + of(id: String): RouterId
+    + toString(): String
+  }
+  enum RouterType {
+    EDGE
+    CORE
+  }
+}
+
+RouterRestAPI ..> RouterViewCLIAdapter : uses
+RouterViewCLIAdapter *-- RouterViewUseCase
+RouterViewCLIAdapter ..> Router : calls filterRouterByType
+RouterViewCLIAdapter ..> RouterType
+
+@enduml
